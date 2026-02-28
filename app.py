@@ -1,59 +1,30 @@
 import streamlit as st
-import moviepy.editor as mp
+import yt_dlp
 import whisper
 import os
-from datetime import timedelta
+from moviepy.editor import VideoFileClip
 
-st.set_page_config(page_title="ViralClip AI", page_icon="✂️")
-st.title("🔥 AI Viral Clip Maker")
+st.set_page_config(page_title="AI Viral Clip Maker")
+st.title("🚀 URL to Viral Clips AI")
 
-# Load AI Transcription Model
-@st.cache_resource
-def load_ai():
-    return whisper.load_model("base")
+url = st.text_input("Paste YouTube URL here:")
 
-model = load_ai()
-
-uploaded_file = st.file_uploader("Upload Long Video", type=["mp4", "mov"])
-
-if uploaded_file:
-    # Save file locally
-    with open("input.mp4", "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
-    if st.button("Generate Viral Clips"):
-        with st.status("Analyzing video for viral hooks...", expanded=True) as status:
-            
-            # 1. AI Transcription & Segmenting
-            st.write("🤖 AI is listening to the audio...")
-            result = model.transcribe("input.mp4")
-            
-            # 2. Viral Logic (Finding segments with highest word density/excitement)
-            st.write("🎬 Identifying top 3 viral moments...")
-            segments = result['segments'][:3] # Grabs the first 3 logical "hooks"
-            
-            video = mp.VideoFileClip("input.mp4")
-            
-            for i, seg in enumerate(segments):
-                start, end = seg['start'], seg['end']
-                # Ensure clip is at least 15 seconds for a good "Short"
-                if (end - start) < 15: end = start + 15
-                
-                # 3. Smart Crop to 9:16 (Vertical)
-                clip = video.subclip(start, end)
-                w, h = clip.size
-                target_w = h * (9/16)
-                center_x = w / 2
-                
-                final_clip = clip.crop(x1=center_x - target_w/2, y1=0, x2=center_x + target_w/2, y2=h)
-                
-                output_name = f"viral_clip_{i+1}.mp4"
-                final_clip.write_videofile(output_name, codec="libx264", audio_codec="aac")
-                
-                st.subheader(f"Clip {i+1} Ready!")
-                st.video(output_name)
-                with open(output_name, "rb") as f:
-                    st.download_button(f"Download Clip {i+1}", f, file_name=output_name)
-
-            video.close()
-            status.update(label="Clips Generated!", state="complete")
+if url:
+if st.button("Generate Clips"):
+with st.status("📥 Processing...", expanded=True) as status:
+ydl_opts = {'format': 'best[ext=mp4]', 'outtmpl': 'video.mp4'}
+with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+ydl.download([url])
+st.write("🤖 AI is finding viral moments...")
+model = whisper.load_model("base")
+result = model.transcribe("video.mp4")
+video = VideoFileClip("video.mp4")
+for i, seg in enumerate(result['segments'][:3]):
+clip = video.subclip(seg['start'], seg['end'])
+w, h = clip.size
+final = clip.crop(x_center=w/2, width=h*(9/16), height=h)
+name = f"clip_{i}.mp4"
+final.write_videofile(name, codec="libx264")
+st.video(name)
+st.download_button(f"Download {name}", open(name, "rb"), file_name=name)
+status.update(label="Done!", state="complete")
