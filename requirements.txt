@@ -1,6 +1,10 @@
 streamlit
+
 openai-whisper
+
 moviepy==1.0.3
+
 yt-dlp
 setuptools
+
 
