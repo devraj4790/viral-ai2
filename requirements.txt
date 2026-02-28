@@ -3,5 +3,5 @@ yt-dlp
 clipsai
 pyannote.audio
 opencv-python-headless
-
-
+whisperx
+torch
